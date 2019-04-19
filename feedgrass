@@ -4,14 +4,14 @@
 # Example usage:
 
 # Use commands with -e option:
-#     $ feedgrass -g /opt/grass70/ -d ~/GRASSDATA/ -l mylocation -e "g.region -p; g.list rast"
+#     $ feedgrass -b /usr/bin/grass70 -g /opt/grass70/ -d ~/GRASSDATA/ -l mylocation -e "g.region -p; g.list rast"
 #
 # Use stdin:
-#     $ echo "g.region -p; g.list rast" | feedgrass -g /opt/grass70/ -d ~/GRASSDATA/ -l test -e \-
-#     $ echo "g.region -p; g.list rast" | feedgrass -g /opt/grass70/ -d ~/GRASSDATA/ -l test
+#     $ echo "g.region -p; g.list rast" | feedgrass -b /usr/bin/grass70 -g /opt/grass70/ -d ~/GRASSDATA/ -l test -e \-
+#     $ echo "g.region -p; g.list rast" | feedgrass -b /usr/bin/grass70 -g /opt/grass70/ -d ~/GRASSDATA/ -l test
 #
 # Create GRASS DATABASE:
-#     $ feedgrass -g /usr/lib/grass70 -d /tmp/GRASS -l mylocation  -t my_raster.tif -e 'r.in.gdal input=my_raster.tif output=raster; r.univar raster'
+#     $ feedgrass -b /usr/bin/grass70 -g /usr/lib/grass70 -d /tmp/GRASS -l mylocation  -t my_raster.tif -e 'r.in.gdal input=my_raster.tif output=raster; r.univar raster'
 #
 # Dependency: GRASS GIS
 #
@@ -30,7 +30,8 @@ usage: feedgrass OPTIONS
 OPTIONS:
    -e      Commands to execute
    -h      Show this message and exit
-   -g      GISBASE   (path to GRASS binary)
+   -g      GISBASE   (path to GRASS directory)
+   -b      BINARY GRASS FILE   (name of GRASS GIS executable)
    -d      GRASS DATABASE (is ignored if '-t' option used)
    -l      GRASS LOCATION (is ignored if '-t' option used)
    -m      GRASS MAPSET (is ignored if '-t' option used; PERMANENT is default)
@@ -40,10 +41,10 @@ OPTIONS:
 
 EXAMPLES:
     $ echo "g.region -p; g.list rast" | \
-        feedgrass -g /opt/grass70/ -d ${HOME}/GRASSDATA/ -l test
-    $ feedgrass -g /opt/grass70/ -d ${HOME}/GRASSDATA/ -l mylocation \
+        feedgrass -b /usr/bin/grass70 -g /opt/grass70/ -d ${HOME}/GRASSDATA/ -l test
+    $ feedgrass -b /usr/bin/grass70 -g /opt/grass70/ -d ${HOME}/GRASSDATA/ -l mylocation \
         -e "g.region -p; g.list rast"
-    $ feedgrass -g /usr/lib/grass70 -d /tmp/GRASS -l mylocation \
+    $ feedgrass -b /usr/bin/grass70 -g /usr/lib/grass70 -d /tmp/GRASS -l mylocation \
         -t my_raster.tif \
         -e 'r.in.gdal input=my_raster.tif output=raster; r.univar raster'
 
@@ -78,7 +79,7 @@ createLocation(){
     # Create TEMP location using a georeferenced file
     # set up DATABASE/LOCATION variables
 
-    grass -e -c $1 "${DATABASE}/${LOCATION}"
+    ${BINARY}  -e -c $1 "${DATABASE}/${LOCATION}"
 }
 
 initGRASS(){
@@ -89,12 +90,13 @@ initGRASS(){
 
     # PATHs
     export GISBASE=$GISBASE
-    export PATH=$PATH:$GISBASE/bin:$GISBASE/scripts
+    export PATH=$PATH:${GISBASE}/bin:${GISBASE}/scripts
+
     if [ "$LD_LIBRARY_PATH" == "" ]
     then
-        export LD_LIBRARY_PATH=$GISBASE/lib
+        export LD_LIBRARY_PATH=${GISBASE}/lib
     else
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GISBASE/lib
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${GISBASE}/lib
     fi
     export GIS_LOCK=$$
 
@@ -118,7 +120,7 @@ callGRASS() {
 }
 
 
-while getopts "t:hqg:e:d:l:m:" OPTION
+while getopts "t:hqg:b:e:d:l:m:" OPTION
 do
     case $OPTION in
         e)
@@ -126,6 +128,9 @@ do
             ;;
         g)
             GISBASE=$OPTARG
+            ;;
+        b)
+            BINARY=$OPTARG
             ;;
         d)
             DATABASE=$OPTARG
